@@ -1,6 +1,8 @@
 //import libraria principala polyglot din graalvm
 import org.graalvm.polyglot.*;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Vector;
 
 //clasa principala - aplicatie JAVA
@@ -73,20 +75,37 @@ class Polyglot {
         System.out.println("Media : " + mean);
         polyglot.close();
     }
+    private static void Binomial(){
+        Context polyglot = Context.newBuilder().allowAllAccess(true).build();
+        Value numbers = polyglot.eval("python","\n" +
+                "n, x = input('Numar de aruncari (n >= 1) si Numar de succese( 1<= x <= n): ').split()\n" +
+                "[int(n), int(x)]");
+        int n = numbers.getArrayElement(0).asInt();
+        int x = numbers.getArrayElement(1).asInt();
+        System.out.println(n);
+        System.out.println(x);
+        Value binomial = polyglot.eval("R","\n" +
+                "x <- pbinom("+ x +","+ n +",0.5)\n" +
+                "x");
+        double rez = binomial.asDouble();
+        System.out.println(rez);
+        polyglot.close();
 
+
+    }
     //functia MAIN
     public static void main(String[] args) {
-       //construim un context pentru evaluare elemente JS
+        //construim un context pentru evaluare elemente JS
         Context polyglot = Context.create();
         //construim un array de string-uri, folosind cuvinte din pagina web:  https://chrisseaton.com/truffleruby/tenthings/
-        Value array = polyglot.eval("js", "[\"If\",\"we\",\"SCARF\",\"MARCH\",\"java\", \"SHARP\"]");
+        Value array = polyglot.eval("js", "[\"WE\",\"EW\",\"java\",\"we\",\"fi\", \"avaj\"]");
         //pentru fiecare cuvant, convertim la upcase folosind R si calculam suma de control folosind PYTHON
         Set<String> printedPairs = new HashSet<>();
-        for (int i = 0; i < array.getArraySize()-1; i++){
+        /*for (int i = 0; i < array.getArraySize()-1;i++){
             String element1 = array.getArrayElement(i).asString();
             String upper1 = RToUpper(element1);
             int crc1 = SumCRC(upper1);
-            for(int j = i+1; j < array.getArraySize(); j++) {
+            for(int j = i+1; j< array.getArraySize();j++) {
                 String element2 = array.getArrayElement(j).asString();
                 String upper2 = RToUpper(element2);
                 int crc2 = SumCRC(upper2);
@@ -99,15 +118,17 @@ class Polyglot {
                 }
             }
         }
-
+        */
+        Binomial();
        /* int[] List= PythonRandList();
         for(int i=0;i<20;i++) {
             System.out.printf("%d ",List[i]);
         }
         System.out.println("");
         JSprint(List);
-*/
+
         sortR(List);
+        */
         // inchidem contextul Polyglot
         //polyglot.close();
     }
