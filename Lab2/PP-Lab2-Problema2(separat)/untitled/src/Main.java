@@ -25,26 +25,26 @@ class Polyglot {
 
     public static void main(String[] args) throws IOException
     {
-        Scanner r = new Scanner(System.in);
+        Scanner scan = new Scanner(System.in);
         FileWriter file = new FileWriter("/home/student/Desktop/PP/Lab2/PP-Lab2-Problema2(separat)/dataset.txt");
         String s;
 
         System.out.print("Inputuri pentru X cu virgula intre ele: ");
-        s = r.nextLine();
+        s = scan.nextLine();
         file.write(s);
         file.write('\n');
 
         System.out.print("Inputuri pentru Y cu virgula intre ele: ");
-        s = r.nextLine();
+        s = scan.nextLine();
         file.write(s);
         file.close();
 
         System.out.print("Numele desenului/fisierului: ");
-        String numeFisier = r.nextLine();
-        String path = r.nextLine();
+        String numeFisier = scan.nextLine();
+        String path = scan.nextLine();
 
         System.out.print("Introduceti o culoare pentru puncte in engleza: ");
-        String color = r.nextLine(); // de exemplu /home/student/Desktop/PP/Lab2/PP-Lab2-Problema2(separat)/
+        String color = scan.nextLine(); // de exemplu /home/student/Desktop/PP/Lab2/PP-Lab2-Problema2(separat)/
 
         linear_regression( numeFisier, path, color);
         String cale = path+numeFisier+".png";

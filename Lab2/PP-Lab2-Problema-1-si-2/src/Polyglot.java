@@ -52,9 +52,9 @@ class Polyglot {
 
     private static void JSprint(int[] v){
         Context polyglot = Context.newBuilder().allowAllAccess(true).build();
-        polyglot.eval("js", "for (let i = 0; i < 20; i++) {" +
-                "console.log(" + Arrays.toString(v) + "[i]);" +
-                "}");
+        polyglot.eval("js",
+                "console.log(" + Arrays.toString(v) +
+                ")");
         polyglot.close();
     }
 
@@ -122,8 +122,9 @@ class Polyglot {
         }
 
         Binomial();
-      //Continuarea laboratorului de aici
-       /* int[] List= PythonRandList();
+
+        //Continuarea laboratorului de aici
+        int[] List= PythonRandList();
         for(int i=0;i<20;i++) {
             System.out.printf("%d ",List[i]);
         }
@@ -131,9 +132,9 @@ class Polyglot {
         JSprint(List);
 
         sortR(List);
-        */
+
         // inchidem contextul Polyglot
-        //polyglot.close();
+        polyglot.close();
     }
 }
 
