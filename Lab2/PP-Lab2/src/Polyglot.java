@@ -79,9 +79,11 @@ class Polyglot {
         Context polyglot = Context.newBuilder().allowAllAccess(true).build();
         Value numbers = polyglot.eval("python","\n" +
                 "n, x = input('Numar de aruncari (n >= 1) si Numar de succese( 1<= x <= n): ').split()\n" +
-                "[int(n), int(x)]");
-        int n = numbers.getArrayElement(0).asInt();
-        int x = numbers.getArrayElement(1).asInt();
+                "n=int(n)\n" +
+                "x=int(x)");
+        int n = polyglot.getBindings("python").getMember("n").asInt();
+        int x = polyglot.getBindings("python").getMember("x").asInt();
+
         System.out.println(n);
         System.out.println(x);
         Value binomial = polyglot.eval("R","\n" +
@@ -101,7 +103,7 @@ class Polyglot {
         Value array = polyglot.eval("js", "[\"WE\",\"EW\",\"java\",\"we\",\"fi\", \"avaj\"]");
         //pentru fiecare cuvant, convertim la upcase folosind R si calculam suma de control folosind PYTHON
         Set<String> printedPairs = new HashSet<>();
-        /*for (int i = 0; i < array.getArraySize()-1;i++){
+        for (int i = 0; i < array.getArraySize()-1;i++){
             String element1 = array.getArrayElement(i).asString();
             String upper1 = RToUpper(element1);
             int crc1 = SumCRC(upper1);
@@ -118,8 +120,9 @@ class Polyglot {
                 }
             }
         }
-        */
+
         Binomial();
+      //Continuarea laboratorului de aici
        /* int[] List= PythonRandList();
         for(int i=0;i<20;i++) {
             System.out.printf("%d ",List[i]);
