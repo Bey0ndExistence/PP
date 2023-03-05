@@ -1,7 +1,8 @@
 import org.graalvm.polyglot.*;
 import java.util.Scanner;
 import java.io.*;
-
+import java.awt.Desktop;
+import java.io.File;
 class Polyglot {
 
     private static void linear_regression(String numeFisier,String path,String color) throws IOException
@@ -40,11 +41,15 @@ class Polyglot {
 
         System.out.print("Numele desenului/fisierului: ");
         String numeFisier = r.nextLine();
-        String path = "/home/student/Desktop/PP/Lab2/PP-Lab2-Problema2(separat)/";
+        String path = r.nextLine();
 
         System.out.print("Introduceti o culoare pentru puncte in engleza: ");
-        String color = r.nextLine();
+        String color = r.nextLine(); // de exemplu /home/student/Desktop/PP/Lab2/PP-Lab2-Problema2(separat)/
 
         linear_regression( numeFisier, path, color);
+        String cale = path+numeFisier+".png";
+        File deschidere = new File(cale);
+        Desktop.getDesktop().open(deschidere);
+
     }
 }
