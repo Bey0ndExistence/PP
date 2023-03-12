@@ -79,6 +79,6 @@ fun main(args : Array<String>){
         println("\nPovestea tradusa a fost salvata in fisierul $filename")
     } catch (ex: IOException) {
         println("A aparut o eroare la scrierea fisierului $filename")
-        ex.printStackTrace()
+        
     }
 }
