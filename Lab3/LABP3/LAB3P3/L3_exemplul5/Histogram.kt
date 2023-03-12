@@ -1,17 +1,6 @@
 //utilizam File din Java.io pentru a deschide fisierul text
 import java.io.File
 import kotlin.collections.MutableList
-fun GetUniqueWordCount(all_words : List<String>) : MutableMap<String, Int> {
-    //functia pentru calculul cuvintelor unice
-    val result = mutableMapOf<String, Int>()
-    return result
-}
-
-fun GetUniqueCharCount(all_chars : List<String>) : MutableMap<Char, Int> {
-    //functia pentru calculul caracterelor unice
-    val result = mutableMapOf<Char, Int>()
-    return result
-}
 
 fun SortByHitCount(items : MutableMap<Char, Int>, how: Boolean) : MutableMap<Int, Char> {
     //functia de sortare a caracterelor, dupa valoare (frecventa), atat crescator cat si descrescator, in functie de how
