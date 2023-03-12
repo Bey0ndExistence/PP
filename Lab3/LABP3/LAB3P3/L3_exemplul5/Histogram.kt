@@ -69,12 +69,12 @@ fun main(args : Array<String>){
     println("\n")
 
 
-  /* val search= Frecv_Trim_Words(trim_words)
+   val search= Frecv_Trim_Words(trim_words)
     for(i in search){
         if(i.value==1)
           println(i.key+"-"+ i.value+" \n")
     }
-*/
+
 
     val search2= Frecv_Chars(chars)
     for(i in search2){
@@ -84,10 +84,11 @@ fun main(args : Array<String>){
 
     val sortedAscending= SortByHitCount(search2,true)
     val sortedDescending= SortByHitCount(search2,false)
+    val sortedAscDesc=sortedAscending.keys.toTypedArray() + sortedDescending.keys.toTypedArray()
     for(i in sortedAscending){
         println(" ${i.key} - ${i.value} ")
     }
-    RHistogram.BuildHistogram(sortedAscending.keys.toTypedArray().plus(sortedDescending.keys.toTypedArray()),"Histogram", false)
+    RHistogram.BuildHistogram(sortedAscDesc,"Histogram", false)
 }
 
     //Pentru constructia histogramelor, R foloseste un mecanism prin care asociaza caracterelor unice, numarul total de aparitii (frecventa)
