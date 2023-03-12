@@ -93,11 +93,14 @@ fun main(args : Array<String>){
             println(i.key+"-"+ i.value+" \n")
     }
 
-    val sorted= SortByHitCount(search2,true)
-    for(i in sorted){
+    val sortedAscending= SortByHitCount(search2,true)
+    val sortedDescending= SortByHitCount(search2,false)
+    for(i in sortedAscending){
         println(" ${i.key} - ${i.value} ")
     }
+    RHistogram.BuildHistogram(sortedAscending.keys.toTypedArray().plus(sortedDescending.keys.toTypedArray()),"Histogram", false)
 }
+
     //Pentru constructia histogramelor, R foloseste un mecanism prin care asociaza caracterelor unice, numarul total de aparitii (frecventa)
     // 1. Construiti in Kotlin acelasi mecanism de masurare a frecventei elementelor unice si afisati cuvintele unice din trim_words
     // 2. Construiti in Kotlin acelasi mecanism de masurare a frecventei elementelor unice si afisati caracterele unice din chars
@@ -109,4 +112,5 @@ fun main(args : Array<String>){
     //RHistogram.BuildHistogram(trim_words.toTypedArray(), "Words", true)
     //construim histograma pentru caractere
     //RHistogram.BuildHistogram(chars.toTypedArray(), "Chars", true)
+
 
