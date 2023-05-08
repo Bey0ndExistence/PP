@@ -12,7 +12,9 @@ def count_lines(paths):
         try:
             with open(path, 'r') as file:
                 lines = file.readlines()
-                line_count = len(lines)
+                line_count = 0
+                for line in file:
+                    line_count += 1
                 yield (path, line_count)
         except Exception as e:
             print(f"Error processing file {path}: {str(e)}")
