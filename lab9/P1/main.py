@@ -1,84 +1,135 @@
-import copy
-import json
+from abc import ABCMeta, abstractmethod
+from copy import copy
 
-class JSONFile:
-    def __init__(self, title, author, paragraphs):
-        self.title = title
-        self.author = author
-        self.paragraphs = paragraphs
 
-    def generate_json(self):
-        data = {
-            "title": self.title,
-            "author": self.author,
-            "paragraphs": self.paragraphs
-        }
-        return json.dumps(data)
+class File(metaclass=ABCMeta):
+    def __init__(self):
+        self.title = None
+        self.author = None
+        self.paragraphs = []
 
-class HTMLFile:
-    def __init__(self, title, author, paragraphs):
-        self.title = title
-        self.author = author
-        self.paragraphs = paragraphs
+    @abstractmethod
+    def read_file_from_stdin(self):
+        pass
 
-    def generate_html(self):
-        html = f"<h1>{self.title}</h1>\n"
-        html += f"<p>Author: {self.author}</p>\n"
+
+class HTMLFile(File):
+    def __init__(self):
+        super().__init__()
+
+    def read_file_from_stdin(self):
+        self.title = input("Enter the title: ")
+        self.author = input("Enter the author: ")
+        para_num = int(input("Enter the number of paragraphs: "))
+        for i in range(0, para_num):
+            print(f"Paragraph {i + 1}:")
+            self.paragraphs.append(input())
+
+    def print_html(self):
+        print(f"<h1>Title: {self.title}</h1>")
+        print(f"<p>Author: {self.author}</p>")
         for paragraph in self.paragraphs:
-            html += f"<p>{paragraph}</p>\n"
-        return html
+            print(f"<p>{paragraph}</p>")
 
 
-class TextFile:
-    def __init__(self, title, author, paragraphs):
-        self.title = title
-        self.author = author
-        self.paragraphs = paragraphs
+class JSONFile(File):
+    def __init__(self):
+        super().__init__()
 
-    def generate_text(self):
-        text = f"Title: {self.title}\n"
-        text += f"Author: {self.author}\n\n"
-        for paragraph in self.paragraphs:
-            text += f"{paragraph}\n"
-        return text
+    def read_file_from_stdin(self):
+        self.title = input("Enter the title: ")
+        self.author = input("Enter the author: ")
+        para_num = int(input("Enter the number of paragraphs: "))
+        for i in range(0, para_num):
+            print(f"Paragraph {i + 1}:")
+            self.paragraphs.append(input())
+
+    def print_json(self):
+        print("{")
+        print(f"\"title\": {self.title},")
+        print(f"\"author\": {self.author},")
+        print(f"\"paragraphs:\" {self.paragraphs}")
+        print("}")
+
+
+class TextFile(File):
+    def __init__(self):
+        super().__init__()
+        self.template = None
+
+    def read_file_from_stdin(self):
+        self.title = input("Enter the title: ")
+        self.author = input("Enter the author: ")
+        para_num = int(input("Enter the number of paragraphs: "))
+        for i in range(0, para_num):
+            print(f"Paragraph {i + 1}:")
+            self.paragraphs.append(input())
 
     def clone(self):
-        return copy.copy(self)
+        return copy(self)
 
-class Article:
-    def __init__(self, title, author, paragraphs):
-        self.title = title
-        self.author = author
-        self.paragraphs = paragraphs
-
-class Blog:
-    def __init__(self, title, author, paragraphs):
-        self.title = title
-        self.author = author
-        self.paragraphs = paragraphs
+    def print_text(self):
+        print(f"Template: {self.template}")
+        print(f"Title: {self.title}")
+        print(f"Author: {self.author}")
+        for paragraph in self.paragraphs:
+            print(paragraph)
 
 
-nr_paragrafe = int(input("Nr Paragrafe: "))
-title = input("Titlul: ")
-author = input("Autorul: ")
+class ArticleTextFile(TextFile):
+    def __init__(self):
+        super().__init__()
+        self.template = "Article"
+
+    def print_text(self):
+        print(f"\t\t\t{self.title}")
+        print(f"\t\t\t\t\t{self.author}")
+        for paragraph in self.paragraphs:
+            print(paragraph)
 
 
-paragraphs = []
-for i in range(nr_paragrafe):
-    paragraph = input(f"Paragraful {i+1}: ")
-    paragraphs.append(paragraph)
+class BlogTextFile(TextFile):
+    def __init__(self):
+        super().__init__()
+
+    def print_text(self):
+        print(f"{self.title}")
+        for paragraph in self.paragraphs:
+            print(paragraph)
+        print(f"\nWritten by {self.author}")
 
 
-tip_file = input("HTML sau JSON sau Text ?:  ")
+class FileFactory:
+    @staticmethod
+    def factory(file_type):
+        if file_type == "HTMLFile":
+            return HTMLFile()
+        elif file_type == "JSONFile":
+            return JSONFile()
+        elif file_type == "TextFile":
+            return TextFile()
 
-if  tip_file== "HTML":
-    file = HTMLFile(title, author, paragraphs)
-    generated_file = file.generate_html()
-elif tip_file == "JSON":
-    file = JSONFile(title, author, paragraphs)
-    generated_file = file.generate_json()
-elif tip_file == "Text":
-    file = TextFile(title, author, paragraphs)
-    generated_file = file.generate_text()
 
-print(generated_file)
+if __name__ == "__main__":
+    factory = FileFactory()
+    
+    html_file = factory.factory("HTMLFile")
+    html_file.read_file_from_stdin()
+    html_file.print_html()
+    
+    json_file = factory.factory("JSONFile")
+    json_file = factory.factory("JSONFile")
+    json_file.read_file_from_stdin()
+    json_file.print_json()
+
+    text_file = factory.factory("TextFile")
+    text_file.read_file_from_stdin()
+    text_file.print_text()
+
+    article_file = ArticleTextFile()
+    article_file.read_file_from_stdin()
+    article_file.print_text()
+
+    blog_file = BlogTextFile()
+    blog_file.read_file_from_stdin()
+    blog_file.print_text()
