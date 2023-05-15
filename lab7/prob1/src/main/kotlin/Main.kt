@@ -1,22 +1,23 @@
 fun main() {
     // Utilizare TwoInputAndGateBuilder
-    val twoInputAndGateBuilder = TwoInputAndGateBuilder()
-    val andGateWithTwoInputs = twoInputAndGateBuilder.setInput(true).setInput(true).build()
-    println("AND cu 2 intrări: ${andGateWithTwoInputs.calculateOutput()}")
+    val twoInputGate = TwoInputAndGateBuilder()
+    val ANDgate2Inputs = twoInputGate.setInput(true).setInput(true).build()
+    
+    println("AND cu 2 intrări: ${ANDgate2Inputs.calculateOutput()}")
 
     // Utilizare ThreeInputAndGateBuilder
-    val threeInputAndGateBuilder = ThreeInputAndGateBuilder()
-    val andGateWithThreeInputs = threeInputAndGateBuilder.setInput(true).setInput(true).setInput(false).build()
-    println("AND cu 3 intrări: ${andGateWithThreeInputs.calculateOutput()}")
+    val threeInputGate = ThreeInputAndGateBuilder()
+    val ANDGate3Inputs = threeInputGate.setInput(true).setInput(true).setInput(false).build()
+    println("AND cu 3 intrări: ${threeInputGate.calculateOutput()}")
 
     // Utilizare FourInputAndGateBuilder
-    val fourInputAndGateBuilder = FourInputAndGateBuilder()
-    val andGateWithFourInputs = fourInputAndGateBuilder.setInput(true).setInput(true).setInput(true).setInput(false).build()
+    val fourInputGate = FourInputAndGateBuilder()
+    val ANDGate4Inputs = fourInputGate.setInput(true).setInput(true).setInput(true).setInput(false).build()
     println("AND cu 4 intrări: ${andGateWithFourInputs.calculateOutput()}")
 
     // Utilizare EightInputAndGateBuilder
-    val eightInputAndGateBuilder = EightInputAndGateBuilder()
-    val andGateWithEightInputs = eightInputAndGateBuilder.setInput(true).setInput(true).setInput(true)
+    val eightInputGate = EightInputAndGateBuilder()
+    val ANDGate8Inputs = eightInputGate.setInput(true).setInput(true).setInput(true)
         .setInput(true).setInput(true).setInput(true).setInput(true).setInput(false).build()
     println("AND cu 8 intrări: ${andGateWithEightInputs.calculateOutput()}")
 }
