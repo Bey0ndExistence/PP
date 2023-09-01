@@ -1,0 +1,1666 @@
+--------------------------------
+Proxy cu Observer
+
+import java.util.Scanner
+import java.io.File
+
+
+interface Observer {
+    fun update(pret: Float, user: String)
+}
+
+interface SchimbarePret {
+    fun schimbaPret(pret: Float)
+}
+
+class LogObserver : Observer {
+    private val fisier = File("log")
+    override fun update(pret: Float, user: String) {
+        fisier.appendText("[LOG] User ${user} has changed the price to ${pret}\n")
+    }
+}
+
+class PretProxy : SchimbarePret {
+    private val pret = Pret()
+    private var authenticate = false
+    private val lista = mutableListOf<Observer>()
+    private var lastLoggedUser = ""
+
+    private fun notifyAll(pret: Float, user: String) {
+        for(elem in lista) {
+            elem.update(pret, user)
+        }
+    }
+
+    fun addObserver(observer: Observer) {
+        lista.add(observer)
+    }
+
+    override fun schimbaPret(pret: Float) {
+        if(!authenticate) {
+            print("User: ")
+            lastLoggedUser = readln()
+            authenticate = true
+        }
+
+        this.pret.schimbaPret(pret)
+        notifyAll(pret, lastLoggedUser)
+    }
+}
+
+class Pret : SchimbarePret {
+    private var pret: Float = 0F
+
+    override fun schimbaPret(pret: Float) {
+        this.pret = pret
+    }
+}
+
+class PretProxy : SchimbarePret {
+    private val pret = Pret()
+    private var authenticate = false
+    private val lista = mutableListOf<Observer>()
+    private var lastLoggedUser = ""
+
+    private fun notifyAll(pret: Float, user: String) {
+        for(elem in lista) {
+            elem.update(pret, user)
+        }
+    }
+
+    fun addObserver(observer: Observer) {
+        lista.add(observer)
+    }
+
+    override fun schimbaPret(pret: Float) {
+        if(!authenticate) {
+            print("User: ")
+            lastLoggedUser = readln()
+            authenticate = true
+        }
+
+        this.pret.schimbaPret(pret)
+        notifyAll(pret, lastLoggedUser)
+    }
+}
+
+
+
+fun main(args: Array<String>) {
+    val colaProxy = PretProxy()
+    colaProxy.addObserver(LogObserver())
+    val scanner = Scanner(System.`in`)
+    while (true) {
+        print("Pret Nou: ")
+        val pretNou: Float = scanner.nextFloat()
+        colaProxy.schimbaPret(pretNou)
+    }
+}
+----------------------------------------
+class Memento:
+    def __init__(self, past_idx, past_list):
+        self.idx = past_idx
+        self.list = past_list
+
+class Processer:
+    def __init__(self, input):
+        self.date = input
+        self.curr_idx = 0
+        self.memento_stack = []
+
+    def restore_from(self, memento: Memento):
+        self.curr_idx = memento.idx
+        self.date = memento.list
+
+    def save_to_memento(self) -> Memento:
+        return Memento(self.curr_idx, self.date)
+
+    def apply_function(self, func):
+        self.memento_stack.append(self.save_to_memento())
+        self.date[self.curr_idx] = func(self.date[self.curr_idx], self.curr_idx)
+        self.curr_idx += 1
+
+    def process(self):
+        f1 = lambda x: x + 1 if x % 2 == 0 else x
+        f2 = lambda x: 3*x*x - 2*x + 1
+        f3 = lambda i: self.date[i] + self.date[i + 1]
+
+        idx = self.curr_idx
+        choice = input(f'[idx={idx}, val={self.date[idx]}] Apply f1, f2, f3 or go back? [1,2,3,b]: ')
+
+        match choice:
+            case '1':
+                self.apply_function(lambda x, _: f1(x))
+            case '2':
+                self.apply_function(lambda x, _: f2(x))
+            case '3':
+                self.apply_function(lambda _, i: f3(i))
+            case 'b':
+                memento = self.memento_stack.pop()
+                self.restore_from(memento)
+
+    def done(self) -> bool:
+        return self.curr_idx == len(self.date)
+
+
+def read_date() -> list[int]:
+    with open('input.txt', 'r') as f:
+        return list(map(lambda s: int(s), f.read().split()))
+
+
+if __name__ == '__main__':
+    proc = Processer(read_date())
+
+    while not proc.done():
+        proc.process()
+
+    print(f'At the end we got: {proc.date}')
+
+
+-----------------------------------------
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.actor
+
+open class Operatii(private val hashMap: HashMap<Int, Int>) {
+    protected fun doSum() = hashMap.map { it.key + it.value }.toList()
+    protected fun doSubtract() = hashMap.map { it.key - it.value }.toList()
+    protected fun doMultiply() = hashMap.map { it.key * it.value }.toList()
+    protected fun doDivide() = hashMap.map { it.key / it.value }.toList()
+}
+
+class Message(val list: CompletableDeferred<List<Int>>)
+
+class SumActor(hashMap: HashMap<Int, Int>) : Operatii(hashMap) {
+    suspend fun performWork(channel: Channel<Message>) {
+        for (msg in channel) {
+            msg.list.complete(doSum())
+        }
+    }
+}
+
+class SubstractionActor(hashMap: HashMap<Int, Int>) : Operatii(hashMap) {
+    suspend fun performWork(channel: Channel<Message>) {
+        for (msg in channel) {
+            msg.list.complete(doSubtract())
+        }
+    }
+}
+
+class MultiplicationActor(hashMap: HashMap<Int, Int>) : Operatii(hashMap) {
+    suspend fun performWork(channel: Channel<Message>) {
+        for (msg in channel) {
+            msg.list.complete(doMultiply())
+        }
+    }
+}
+
+class DivisionActor(hashMap: HashMap<Int, Int>) : Operatii(hashMap) {
+    suspend fun performWork(channel: Channel<Message>) {
+        for (msg in channel) {
+            msg.list.complete(doDivide())
+        }
+    }
+}
+
+fun CoroutineScope.sumActor(hashMap: HashMap<Int, Int>) = actor<Message> {
+    SumActor(hashMap).performWork(channel)
+}
+
+fun CoroutineScope.subActor(hashMap: HashMap<Int, Int>) = actor<Message> {
+    SubstractionActor(hashMap).performWork(channel)
+}
+
+fun CoroutineScope.mulActor(hashMap: HashMap<Int, Int>) = actor<Message> {
+    MultiplicationActor(hashMap).performWork(channel)
+}
+
+fun CoroutineScope.divActor(hashMap: HashMap<Int, Int>) = actor<Message> {
+    DivisionActor(hashMap).performWork(channel)
+}
+
+fun main(args: Array<String>) = runBlocking<Unit> {
+    val data = hashMapOf(
+        1 to 15,
+        2 to 22,
+        3 to 333,
+        4 to 41,
+        5 to 5
+    )
+
+    val channels = listOf(
+        sumActor(data),
+        mulActor(data),
+        divActor(data),
+        subActor(data),
+    )
+
+    val answers = List(4) { CompletableDeferred<List<Int>>() }
+
+    channels.zip(answers).map { it.first.send(Message(it.second)) }
+
+    for ((idx, answer) in answers.map { it.await() }.withIndex()) {
+        data.putAll(answer.chunked(2) { (idx * 1000 + it[0]) to it.getOrElse(1) { 0 } }.toMap())
+    }
+
+    println(data)
+}
+
+-----------------------------------------
+
+import org.jsoup.Jsoup
+
+import org.jsoup.nodes.Document
+import java.io.File
+
+fun main(args: Array<String>) {
+    val html_document = Jsoup.connect("https://altex.ro").get()
+    val imglinks = mutableListOf<String>()
+    for (elem in html_document.body().getElementsByTag("img")) {
+        imglinks.add(elem.attributes()["src"].substringAfterLast("https://"))
+        //println(elem.attributes()["src"].substringAfterLast("http://"))
+    }
+    var i = 0
+    val folder = File("Imagini")
+    if(!folder.isDirectory)
+        folder.mkdir()
+    else {
+        folder.deleteRecursively()
+        folder.mkdir()
+    }
+    for(link in imglinks) {
+        val image = File("Imagini/image${i}.jpg")
+        if(!link.startsWith("data") && !link.isEmpty() && !link.startsWith("//"))
+            image.writeBytes(khttp.get("https://" + link).content)
+        i++
+    }
+
+
+}
+
+--------------------------------------
+Modelul fatada
+
+from abc import ABC, abstractmethod
+from enum import Enum
+
+
+class BoomboxCommand(ABC):
+
+    @abstractmethod
+    def execute(self):
+        raise NotImplemented("BoomboxCommand.execute() not implemented")
+
+
+class PlayBT(BoomboxCommand):
+
+    def execute(self):
+        print("Playing with BT~")
+
+
+class PlayRadio(BoomboxCommand):
+
+    def execute(self):
+        print("Playing radio antena satelor!")
+
+
+class Record(BoomboxCommand):
+
+    def execute(self):
+        print("Recording...")
+
+
+class Rewind(BoomboxCommand):
+
+    def execute(self):
+        print("Rewinding last hit!")
+
+
+class FastForward(BoomboxCommand):
+
+    def execute(self):
+        print("Skipping the annoying song..")
+
+
+class CommandFactory:
+
+    def create_command(self, command):
+        match command:
+            case "PlayBT":
+                return PlayBT()
+            case "PlayRadio":
+                return PlayRadio()
+            case "Record":
+                return Record()
+            case "Rewind":
+                return Rewind()
+            case "FastForward":
+                return FastForward()
+            case _:
+                raise NotImplemented("Command doesn't exist")
+
+
+class BoomboxState(Enum):
+    PLAYING_RADIO = 0
+    PLAYING_BT = 1
+    STOPPED = 2
+    RECORDING = 3
+    FAST_FORWARDING = 4
+    REWINDING = 5
+
+
+class Boombox:
+    volume: int = 50
+    battery: int = 100
+    state: BoomboxState = BoomboxState.STOPPED
+
+    def play_bt(self):
+        if self.battery > 0:
+            if self.state == BoomboxState.STOPPED:
+                comm = CommandFactory().create_command("PlayBT")
+                comm.execute()
+                self.state = BoomboxState.PLAYING_BT
+            self.battery -= 1
+
+    def play_radio(self):
+        if self.battery > 0:
+            if self.state == BoomboxState.STOPPED:
+                comm = CommandFactory().create_command("PlayRadio")
+                comm.execute()
+                self.state = BoomboxState.PLAYING_RADIO
+            self.battery -= 1
+
+    def record(self):
+        if self.battery > 0:
+            if self.state == BoomboxState.PLAYING_BT or self.state == BoomboxState.PLAYING_RADIO:
+                comm = CommandFactory().create_command("Record")
+                comm.execute()
+                self.state = BoomboxState.RECORDING
+            self.battery -= 1
+
+    def fast_forward(self):
+        if self.battery > 0:
+            if self.state == BoomboxState.PLAYING_BT or self.state == BoomboxState.PLAYING_RADIO:
+                comm = CommandFactory().create_command("FastForward")
+                comm.execute()
+                self.state = BoomboxState.FAST_FORWARDING
+            self.battery -= 1
+
+    def rewind(self):
+        if self.battery > 0:
+            if self.state == BoomboxState.PLAYING_BT or self.state == BoomboxState.PLAYING_RADIO:
+                comm = CommandFactory().create_command("Rewind")
+                comm.execute()
+                self.state = BoomboxState.REWINDING
+            self.battery -= 1
+
+    def stop(self):
+        self.state = BoomboxState.STOPPED
+
+    def get_battery(self):
+        return self.battery
+
+    def get_volume(self):
+        return self.volume
+
+    def set_volume(self, volume):
+        self.volume = volume
+
+if __name__ == "__main__":
+    boombox = Boombox()
+    boombox.set_volume(boombox.get_volume() + 10)
+    boombox.play_bt()
+    boombox.stop()
+
+    boombox.play_radio()
+    boombox.set_volume(49)
+    boombox.rewind()
+    boombox.stop()
+
+    boombox.play_bt()
+    boombox.fast_forward()
+    boombox.stop()
+
+    boombox.play_bt()
+    boombox.record()
+    boombox.stop()
+    print(boombox.get_battery())
+
+
+---------------------------------------
+
+Graficul functiei
+
+from tkinter import Tk, Canvas, Frame, BOTH
+
+def mysum (n):
+    sum = 0
+    for i in range (0, n+1):
+        sum += i
+
+    sum += n
+    
+    mylist = []
+    for i in range (49, 20, -1):
+        mylist.append((i, i-sum))
+    
+    return (mylist, sum)
+
+def main():
+    root = Tk()
+    root.geometry("1280x720")
+    canvas = Canvas(root, width=1280, height=720, background="white")
+
+    (mylist, sum) = mysum(3)
+
+    i = 0
+    j = 0
+    while i<len(mylist)-1:
+        j = i+1
+        
+        (xc, yc) = mylist[i]
+        (xv, yv) = mylist[j]
+        canvas.create_line(xc*10, yc*10, xv*10, yv*10, fill = "black", width = 10)
+        
+        i = i+1
+    
+    canvas.create_text(100, 100, text = f"sum = {sum}")
+
+    canvas.grid(row = 0, column = 0)
+    root.mainloop()
+    
+main()
+
+
+---------------------------------------
+
+TKINTER
+
+
+from tkinter import *
+from tkinter import ttk
+
+
+class Employee:
+    def __init__(self, nume, data_nasterii, functie, departament, companie):
+        self.nume = nume
+        self.data_nasterii = data_nasterii
+        self.functie = functie
+        self.departament = departament
+        self.companie = companie
+
+    def __str__(self):
+        return f'\nnume: {self.nume}' \
+               f'\ndata nasterii {self.data_nasterii} ' \
+               f'\nfunctie {self.functie}' \
+               f'\ncompanie {self.companie}' \
+               f'\ndepartament {self.departament}'
+
+
+angajat1 = Employee(
+    nume="Eugen Coilung",
+    data_nasterii="4.06.2002",
+    functie="smecher",
+    departament="smecherie",
+    companie="COntinental"
+)
+
+
+def addEmployee(employee, angajati, mainframe):
+    angajati.append(employee)
+    ttk.Label(mainframe, text=str(employee)).grid(column=2, row=len(angajati) + 11, sticky=EW)
+
+
+if __name__ == '__main__':
+    root = Tk()
+    root.title = "Please add an employee"
+
+    mainframe = ttk.Frame(root, padding="5 5 12 12")
+    mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
+    root.columnconfigure(0, weight=1)
+    root.rowconfigure(0, weight=1)
+
+    NameInput = StringVar()
+    NameInput_entry = ttk.Entry(mainframe, width=20, textvariable=NameInput)
+    NameInput_entry.grid(column=2, row=2, sticky=(W, E))
+
+    DayOfBirthInput = StringVar()
+    DayOfBirth_entry = ttk.Entry(mainframe, width=20, textvariable=DayOfBirthInput)
+    DayOfBirth_entry.grid(column=2, row=3, sticky=(W, E))
+
+    MonthOfBirthInput = StringVar()
+    months = ttk.Combobox(mainframe, width=27, textvariable=MonthOfBirthInput)
+    months['values'] = (' January',
+                        ' February',
+                        ' March',
+                        ' April',
+                        ' May',
+                        ' June',
+                        ' July',
+                        ' August',
+                        ' September',
+                        ' October',
+                        ' November',
+                        ' December')
+    months.grid(column=2, row=4)
+
+    YearOfBirthInput = StringVar()
+    YearOfBirth_entry = ttk.Entry(mainframe, width=20, textvariable=YearOfBirthInput)
+    YearOfBirth_entry.grid(column=2, row=5, sticky=(W, E))
+
+    FunctieInput = StringVar()
+    Functie_entry = ttk.Entry(mainframe, width=20, textvariable=FunctieInput)
+    Functie_entry.grid(column=2, row=6, sticky=(W, E))
+
+    DepartamentInput = StringVar()
+    Departament_entry = ttk.Entry(mainframe, width=20, textvariable=DepartamentInput)
+    Departament_entry.grid(column=2, row=7, sticky=(W, E))
+
+    CompanieInput = StringVar()
+    Companie_entry = ttk.Entry(mainframe, width=20, textvariable=CompanieInput)
+    Companie_entry.grid(column=2, row=8, sticky=(W, E))
+
+    ttk.Label(mainframe, text='Please add an employee:').grid(column=2, row=0, sticky=N)
+
+    ttk.Label(mainframe, text='').grid(column=1, row=1, sticky=N)
+    ttk.Label(mainframe, text='Name: ').grid(column=1, row=2, sticky=E)
+    ttk.Label(mainframe, text='Day of Birth: ').grid(column=1, row=3, sticky=E)
+    ttk.Label(mainframe, text='Month of Birth: ').grid(column=1, row=4, sticky=E)
+    ttk.Label(mainframe, text='Year of Birth: ').grid(column=1, row=5, sticky=E)
+    ttk.Label(mainframe, text='Functie: ').grid(column=1, row=6, sticky=E)
+    ttk.Label(mainframe, text='Departament: ').grid(column=1, row=7, sticky=E)
+    ttk.Label(mainframe, text='Companie: ').grid(column=1, row=8, sticky=E)
+
+    angajati = []
+    angajati.append(angajat1)
+
+    print(str(angajati))
+
+    ttk.Button(mainframe, text="ADD Employee", command=lambda: addEmployee(
+        Employee(
+            nume=NameInput.get(),
+            data_nasterii=DayOfBirthInput.get() + MonthOfBirthInput.get() + " " + YearOfBirthInput.get(),
+            functie=FunctieInput.get(),
+            departament=DepartamentInput.get(),
+            companie=CompanieInput.get()
+        ),
+        angajati,
+        mainframe
+    )
+               ).grid(column=3, row=3, sticky=W)
+
+    ttk.Label(mainframe, text='List de angajati: ').grid(column=2, row=10, sticky=N)
+
+
+    menubar = Menu(root)
+    root.config(menu=menubar)
+
+    file_menu = Menu(menubar)
+    file_menu.add_command(label='Exit', command=root.destroy)
+    menubar.add_cascade(label='File', menu=file_menu, underline=0)
+
+    root.mainloop()
+
+
+
+-------------------------------------
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
+import java.io.File
+/*
+Sa se scrie un program Kotlin utilizand corutine si canale conflated pentru comunicarea intre procese care distribuie
+ intro maniera ciclica (cuvant1 - proces1 cuvant2-proces2, cuvant3 - proces3, cuvant4-proces1), cate un cuvant citit
+  dintrun fisier catre alte trei procese, iar fiecrare din acestea fiseaza numele lui si cuvantul primit la consola
+ */
+fun main() = runBlocking {
+    val wordsChannel = produceWordsFromFile("C:\\Users\\Rduku\\Desktop\\pula\\src\\main\\resources\\droguri.txt")
+
+    val process1 = launchProcess("Proces1", wordsChannel)
+    val process2 = launchProcess("Proces2", wordsChannel)
+    val process3 = launchProcess("Proces3", wordsChannel)
+
+    listOf(process1, process2, process3).joinAll()
+}
+
+fun CoroutineScope.produceWordsFromFile(fileName: String): ReceiveChannel<String> = produce {
+    val reader = File(fileName).bufferedReader()
+
+    while(true) {
+        val word = reader.readLine() ?: break
+        send(word)
+        delay(1000) // Așteaptă 1 secundă înainte de a trimite următorul cuvânt
+    }
+}
+
+fun CoroutineScope.launchProcess(processName: String, wordsChannel: ReceiveChannel<String>): Job = launch {
+    for (word in wordsChannel) {
+        println("$processName: $word")
+    }
+}
+
+
+--------------------------------------
+
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
+import java.io.File
+/*
+Sa se scrie un program Kotlin utilizand corutine si canale conflated pentru comunicarea intre procese care distribuie
+ intro maniera ciclica (cuvant1 - proces1 cuvant2-proces2, cuvant3 - proces3, cuvant4-proces1), cate un cuvant citit
+  dintrun fisier catre alte trei procese, iar fiecrare din acestea fiseaza numele lui si cuvantul primit la consola
+ */
+fun main() = runBlocking {
+    val wordsChannel = produceWordsFromFile("droguri.txt")
+
+    val process1 = launchProcess("Proces1", wordsChannel)
+    val process2 = launchProcess("Proces2", wordsChannel)
+    val process3 = launchProcess("Proces3", wordsChannel)
+
+    listOf(process1, process2, process3).joinAll()
+}
+
+fun CoroutineScope.produceWordsFromFile(fileName: String): ReceiveChannel<String> = produce {
+    val words = File(fileName).readLines()
+    var index = 0
+
+    while (true) {
+        send(words[index])
+        index = (index + 1) % words.size
+        delay(1000) // Așteaptă 1 secundă înainte de a trimite următorul cuvânt
+    }
+}
+
+fun CoroutineScope.launchProcess(processName: String, wordsChannel: ReceiveChannel<String>): Job = launch {
+    for (word in wordsChannel) {
+        println("$processName: $word")
+    }
+}
+
+
+
+----------------------------------------
+import java.io.File
+import java.nio.file.Paths
+import java.util.Scanner
+import java.util.concurrent.locks.Condition
+import java.util.concurrent.locks.ReentrantLock
+
+
+class Client(
+    private val mutex: ReentrantLock,
+    private val number: Int
+): Thread() {
+
+    private var map : MutableMap<Int,Int> = mutableMapOf()
+    private var start: Int = 0
+    private var end: Int = 0
+
+    private var ready: Condition = mutex.newCondition()
+
+    private fun setReady(){
+        mutex.lock()
+        ready.signal()
+        mutex.unlock()
+    }
+
+    fun receive(map: MutableMap<Int,Int>,start: Int,end:Int){
+        this.map = map
+        this.start = start
+        this.end = end
+
+        setReady()
+    }
+
+    override fun run(){
+        mutex.lock()
+        ready.await()
+
+        println(name)
+        for (i in start until end){
+            if (map[i] == null){
+                continue
+            }
+
+            print("${map[i]} -> ")
+            map[i] = map[i]!!*number
+            println("${map[i]}")
+        }
+
+        mutex.unlock()
+    }
+}
+
+class Server(
+    private val mutex: ReentrantLock,
+    private val map: MutableMap<Int,Int>,
+    private val path: String,
+    private val clients: List<Client>
+): Thread() {
+    init {
+        isDaemon = true
+    }
+
+    override fun run() {
+        map.putAll(readFile())
+
+        val unitOfWork = map.keys.size/clients.size
+
+        for (client in clients.withIndex()) {
+            client.value.receive(map, client.index * unitOfWork, (client.index + 1) * unitOfWork)
+        }
+    }
+
+    private fun readFile(): MutableMap<Int, Int> {
+        val input = Scanner(File(path))
+        var i = 0
+
+        val map = mutableMapOf<Int,Int>()
+
+        while(input.hasNextInt()){
+            map[i] = input.nextInt()
+            i++
+        }
+
+        return map
+    }
+}
+
+fun main(){
+    var mutex = ReentrantLock()
+    var map = mutableMapOf <Int,Int>()
+
+    var c1 = Client(mutex,1)
+    var c2 = Client(mutex,2)
+    var c3 = Client(mutex,3)
+    var c4 = Client(mutex,4)
+
+    val clients = listOf<Client>(c1,c2,c3,c4)
+
+   val path = Paths.get("").toAbsolutePath().toString()
+
+
+    var serv = Server(mutex,map, "$path/numere", clients)
+
+    serv.start()
+    clients.forEach{it.start()}
+
+    print(map)
+}
+
+-----------------------------------------
+
+import java.util.concurrent.locks.ReentrantLock
+
+open class Base(
+    var hashMap: HashMap<Int,Int>
+){
+    var mux = ReentrantLock()
+
+    protected fun inmultire():List<Int> {
+        return hashMap.map {it.value * it.key }
+    }
+
+     protected fun impartire():List<Int> {
+        return hashMap.map {it.value / it.key }
+    }
+
+     protected fun adunare():List<Int> {
+         return hashMap.map {it.value + it.key } }
+
+     protected fun scadere():List<Int> {
+         return hashMap.map {it.value - it.key
+         }
+     }
+
+}
+
+class Adunare(hashMap: HashMap<Int, Int>): Base(hashMap),Runnable {
+    override fun run() {
+        mux.lock()
+        hashMap.putAll(adunare().asSequence().withIndex().map { it.index to it.value})
+        mux.unlock()
+    }
+}
+
+class Scadere(hashMap: HashMap<Int, Int>): Base(hashMap),Runnable {
+    override fun run() {
+        mux.lock()
+        hashMap.putAll(scadere().asSequence().withIndex().map { it.index * 3  to it.value})
+        mux.unlock()
+    }
+}
+
+class Inmultire(hashMap: HashMap<Int, Int>): Base(hashMap),Runnable {
+    override fun run() {
+        mux.lock()
+        hashMap.putAll(inmultire().asSequence().withIndex().map { it.index + it.value to it.value})
+        mux.unlock()
+    }
+}
+
+class Imparire(hashMap: HashMap<Int, Int>): Base(hashMap),Runnable {
+    override fun run() {
+        mux.lock()
+        hashMap.putAll(impartire().asSequence().withIndex().map { it.index * it.value to it.value})
+        mux.unlock()
+    }
+}
+
+fun main(){
+    var hashMap = hashMapOf<Int,Int>(
+        111 to 1,
+        222 to 2,
+        333 to 3,
+    )
+
+    var adunare = Thread(Adunare(hashMap))
+    var scadere = Thread(Scadere(hashMap))
+    var inmultire = Thread(Inmultire(hashMap))
+    var imparire = Thread(Imparire(hashMap))
+
+    adunare.start()
+    scadere.start()
+    inmultire.start()
+    imparire.start()
+
+    adunare.join()
+    scadere.join()
+    inmultire.join()
+    imparire.join()
+
+    println(hashMap)
+}
+
+
+-------------------------------------------
+modelul Composite cu submeniu si meniu
+
+
+
+import abc
+
+class Option(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def execute(self):
+        pass
+
+class Actiune(Option):
+    def __init__(self, nume):
+        self.nume = nume
+
+    def execute(self):
+        print(self.nume)
+
+class Menu(Option):
+    def __init__(self, nume):
+        self.optiuni = []
+        self.nume = nume
+
+    def add(self, other):
+        self.optiuni.append(other)
+
+    def display(self):
+        for index, option in enumerate(self.optiuni):
+            print(f'{index + 1}. {option.nume}')
+        print('0. Return to previous menu')
+
+    def execute(self):
+        while True:
+            self.display()
+            x = int(input('Introdu optiunea: '))
+            if x == 0:
+                break
+
+            if 1 <= x <= len(self.optiuni):
+                selected_option = self.optiuni[x - 1]
+                selected_option.execute()
+            else:
+                print("Invalid option. Please try again.")
+
+if __name__ == '__main__':
+    option3 = Actiune("save")
+    option1 = Actiune("penis")
+    option2 = Actiune("load")
+
+    optionMenu = Menu("next")
+    optionMenu.add(Actiune("load menu 2"))
+    optionMenu.add(Actiune("save menu 2"))
+
+    menu = Menu("menuStart")
+
+    menu.add(option1)
+    menu.add(option2)
+    menu.add(option3)
+    menu.add(optionMenu)
+
+    optionMenu2 = Menu('next2')
+
+    optionMenu2.add(Actiune("menu1 actiune1"))
+    optionMenu2.add(Actiune("menu1 actiune2"))
+    optionMenu.add(optionMenu2)
+
+    menu.execute()
+
+
+
+
+--------------------------------------------
+
+import java.io.File
+
+fun main(args: Array<String>) {
+    val mytext = File("text.txt").readText(Charsets.UTF_8)
+    val words = mytext.trim().split("\\s+".toRegex())
+
+    val res = words.map{if(it.length > 3){it.substring(startIndex = it.length/2-1, endIndex = it.length/2 + 1)} else {it} }
+
+    println(res)
+}
+
+
+------------------------------------------------
+modelul mediator
+
+from abc import ABC, abstractmethod
+
+class mediator():
+    def __init__(self):
+        self.furnici = []
+
+    def add_furnica(self, furnica):
+        self.furnici.append(furnica)
+
+    def notify(self, sender, message):
+        for furnica in self.furnici:
+            if(furnica == sender):
+                continue
+            message.execute(furnica)
+
+
+class message(ABC):
+    @abstractmethod
+    def execute(self, furnica):
+        pass
+
+
+class food_message(message):
+    def execute(self, furnica):
+        furnica.handle_food()
+
+
+class help_message(message):
+    def execute(self, furnica):
+        furnica.handle_help()
+
+
+class furnicuta(ABC):
+    def __init__(self, M):
+        self.M = M
+        self.M.add_furnica(self)
+        
+    def send_message(self, message):
+        self.M.notify(self, message)
+
+    @abstractmethod
+    def handle_help(self):
+        pass
+
+    @abstractmethod
+    def handle_food(self):
+        pass
+
+
+class soldat(furnicuta):
+    def handle_help(self):
+        print("vin sa va ajut fratii mei")
+
+    def handle_food(self):
+        print("vin sa mananc daca e")
+
+
+class explorator(furnicuta):
+    def handle_help(self):
+        print("nu eu")
+
+    def handle_food(self):
+        print("haidetz la masa")
+
+
+class usarnic(furnicuta):
+    def handle_help(self):
+         print("nu eu")
+
+    def handle_food(self):
+        print("vin sa mananc daca e")
+    
+
+def main():
+    mediatorul = mediator()
+    soldatul1 = soldat(mediatorul)
+    soldatul2 = soldat(mediatorul)
+    exploratorul = explorator(mediatorul)
+    usarnicul = usarnic(mediatorul)
+
+    usarnicul.send_message(help_message())
+    exploratorul.send_message(food_message())
+    soldatul1.send_message(help_message())
+
+main()
+
+
+
+--------------------------------------------
+map_reduce
+
+from functools import reduce
+from pprint import pprint
+
+from more_itertools import map_reduce
+from functional import seq
+
+def read_file(file) -> str:
+    with open(file, 'r') as f:
+        return f.read()
+
+
+if __name__ == '__main__':
+    documente = ['document1.txt', 'document2.txt']
+
+    continut = map(lambda doc: (doc, read_file(doc).split()), documente)  # [(a, [b, c, d]), (e, [f, g, h])]
+    cuvinte = reduce(lambda x, y: x + y,  # [(a, b), (a, c), (a, d), (e, f), (e, g), (e, h)]
+                     map(lambda cont: list(map(lambda w: (cont[0], w), cont[1])), continut))  # [[(a, b), (a, c), (a, d)], [(e, f), (e, g), (e, )]]
+
+    texte_intermediare = dict(map_reduce(
+        cuvinte,  # cuvintele sunt perechi (document, cuvant)
+        keyfunc=lambda document_si_word: document_si_word[1],
+        valuefunc=lambda document_si_word: (document_si_word[0], 1),
+        # [("doc1", 1), ("doc2", 1), ("doc1", 1), ("doc1", 1)]
+        reducefunc=lambda s: seq(s).reduce_by_key(lambda x, y: x + y)
+    ))
+
+    pprint(texte_intermediare
+
+-------------------------------------------------------------------
+Sa scrie un program care va utiliza mai multe corutine ce vor suma cate 2 valori  alaturate dintr-un hashmap, apoi rezultatele sumarilor vor fi depuse intr-un ADT ( comun pentru toate corutinele) rezultat. Inainte de afisare, se va utiliza o reimplementare a barierei care se va baza pe corutine si pe mecanisme de tip wait, notify , notifyall
+
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.sync.Mutex
+
+suspend fun sum(h: Map<Int, Int>, bariera: Bariera): List<Int> = coroutineScope {
+    val list = mutableListOf<Int>()
+    for (i in 0 until h.size - 1) {
+        val key1 = h.keys.elementAt(i)
+        val key2 = h.keys.elementAt(i + 1)
+        list.add(h[key1]!! + h[key2]!!)
+    }
+    bariera.notify()
+    list
+}
+
+suspend fun temp(bariera: Bariera) = coroutineScope {
+    delay(5000)
+    bariera.notify()
+}
+
+class Bariera(val n: Int) {
+    private val mutex = Mutex()
+    private val channel = Channel<Unit>(Channel.UNLIMITED)
+    private var counter = 0
+
+    suspend fun wait() {
+        mutex.lock()
+        if (counter != n) {
+            mutex.unlock()
+            channel.receive()
+        } else {
+            mutex.unlock()
+        }
+    }
+
+    suspend fun notify() {
+        mutex.lock()
+        counter++
+        if (counter == n) {
+            channel.send(Unit)
+        }
+        mutex.unlock()
+    }
+}
+
+fun main() = runBlocking {
+    val h = mutableMapOf(4 to 6, 3 to 6, 2 to 9, 7 to 7)
+    val bariera = Bariera(4)
+    val c1 = async { sum(h, bariera) }
+    val c2 = async { sum(h, bariera) }
+    val c3 = async { sum(h, bariera) }
+    val c4 = async { temp(bariera) }
+    bariera.wait()
+    println(c1.await())
+    println(c2.await())
+    println(c3.await())
+}
+
+
+
+----------------------------------------------------------------------
+Utilizand procese Python, sa se creeze un proces care da timestamp-ul la solicitarea unui alt proces care citeste cate un cuvant dintr-un fisier text. Vor exista minim 2 procese care citesc din mai multe fisiere. Rezultatele sunt depuse intr-un ADT de tip dictionar,  in care cheia va fi timestamp-ul iar valoarea va fi cuvantul . Printr-o coada thread-safe, se va transmite ADT-ul creat catre un alt proces care il va prelucra astfel incat sa concateneze cheia si valoarea intre ele CSV
+
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.sync.Mutex
+
+from datetime import datetime
+import time
+import multiprocessing
+
+def get_time():
+    time.sleep(1)
+    return datetime.now().strftime("%H:%M:%S")
+
+
+def read(fisier, queue):
+    dictionar = {}
+    with open(fisier,'r') as file:  
+        for line in file:     
+            for word in line.split():
+                time = get_time()
+                dictionar[time] = word  
+    queue.put(dictionar)         
+
+def combine(queue):
+    CSV = open("Output.csv", "w")
+    res = ""
+    while not queue.empty():
+        dictionar = queue.get()
+        for key in dictionar:
+            res += key + "-" + dictionar[key] + ","
+    CSV.write(res)
+
+def main():
+    queue = multiprocessing.Queue()
+    process_1 = multiprocessing.Process(target=read, args=["Python1.txt", queue])
+    process_2 = multiprocessing.Process(target=read, args=["Python2.txt", queue])
+    process_1.start()
+    process_2.start()
+    process_1.join()
+    process_2.join()
+    process_3 = multiprocessing.Process(target=combine, args=[queue])
+    process_3.start()
+    process_3.join()
+
+
+
+if __name__ == '__main__':
+    main()
+--------------------------------------------------------------
+utilizand functii din itertool din python si un contor de tip closure si sa se genereze automat nume de fisiere, metoda verifica unde a ramas generatorul
+
+import itertools as it
+import os
+
+def generare_temporara(s1, s2):
+    for tmp in map(lambda idx : f'{s1}-{idx}-{s2}.tmp', it.count(10)):
+        yield tmp
+
+if __name__ == '__main__':
+    generator = generare_temporara("mama", "tata")
+    for i in range(0, 3):
+        open(next(generator), 'w')
+---------------------------------------------------------------
+Functor
+
+val f = {x: Int -> 3 * x - 1 }
+
+class CollectionFunctor<T>(val map: MutableMap<T, T>) {
+    fun map(function: (T) -> T): CollectionFunctor<T> {
+        for(item in map) {
+            map[item.key] = function(item.value)
+
+        }
+        return CollectionFunctor(map)
+    }
+
+    override fun toString(): String {
+        return "CollectionFunctor(map=$map)"
+    }
+}
+
+fun main(args: Array<String>) {
+    val map = mutableMapOf<Int, Int>(
+        1 to 2,
+        2 to 4,
+        3 to 9,
+    )
+    val text  = CollectionFunctor<Int>(map).map(f)
+
+    println(text.map(f))
+
+}
+
+------------------------------------------------
+Pornind de la doua multimi A si B care contin 20 de leemnte depuse in doua colectii separate si tinand cont de (A x B) U ( B X B)  
+
+val cart = { xs: List<Int>, ys: List<Int> -> xs.flatMap { x -> ys.map { y -> Pair(x, y) } } }
+
+fun main(args: Array<String>) {
+    val listA = listOf<Int>(1, 2, 3)
+    val listB = listOf<Int>(5,8,6,7)
+
+    val uniune = cart(listA, listB).union(cart(listB, listB))
+    println(uniune)
+    
+    val variatatumefiata = uniune.groupingBy { it.first }.fold({ key, _ -> key to mutableListOf<Int>() },
+        { _, accumulator, element -> accumulator.also { it.second.add(element.second) } }
+    ).mapValues { it.value.second }
+    
+    val variantascurta = uniune.groupBy({ it.first }, {it.second})
+    println(variantascurta)
+
+    print(variatatumefiata)
+}
+
+
+---------------------------------------------
+memoizare cu cache fibonnaci
+
+
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import java.util.concurrent.ConcurrentHashMap
+
+val cache = ConcurrentHashMap<Long, Long>()
+
+suspend fun fibbo(n: Long): Long = coroutineScope{
+    if (n in cache.keys ){
+        println("Vom lua o valoare din cache  $n -> ${cache[n]}")
+        return@coroutineScope cache[n]!!
+    }
+
+    if ( n < 2 )
+        return@coroutineScope 1
+    else {
+        val result1 = async {  fibbo(n - 1) }.await()
+        val result2 = async {  fibbo(n - 2) }.await()
+
+        cache[n] = result1 + result2
+
+        return@coroutineScope cache[n]!!
+    }
+}
+
+suspend fun main() {
+    print(fibbo(49))
+}
+
+
+
+----------------------------------------------
+Lant de responsabilitati dublu python cu threaduri si cozi de mesaje
+
+from threading import Thread, Condition
+from time import sleep
+from queue import Queue
+from abc import ABC, abstractmethod
+
+
+class Message:
+    def __init__(self, message, level, direction):
+        self.message = message
+        self.level = level
+        self.direction = direction
+
+    def __str__(self):
+        return f"\n Message : {self.message}, Level: {self.level}, Direction {self.direction}"
+
+
+class Handler(ABC, Thread):
+    def __init__(self, chain, previous: "Handler", next_chain: "Handler"):
+        self.previous = previous
+        self.next_chain = next_chain
+        self.chain = chain
+
+        self.messages = Queue()
+
+        Thread.__init__(self)
+
+    @abstractmethod
+    def handleRequest(self, m: Message):
+        pass
+
+    def run(self):
+        while True:
+            m = self.messages.get()
+
+            self.handleRequest(m)
+
+
+class CEO(Handler):
+    def handleRequest(self, m: Message):
+        if m.level == 1:
+            if m.direction == self.chain:
+                print(f"Sunt CEO  {self.chain} si voi rezolva {m}")
+            elif m.direction == self.next_chain.chain:
+                print(
+                    f"Sunt CEO {self.chain} si transmite mesajul lui {self.next_chain.chain}"
+                )
+
+                self.next_chain.messages.put(m)
+
+            else:
+                print(f"NU exista acest {m.direction}")
+        else:
+            print(f"Sunt CEO {self.chain} si transmite mesajul lui previous")
+            self.previous.messages.put(m)
+
+
+class Executive(Handler):
+    def handleRequest(self, m: Message):
+        if m.level == 2:
+            if m.direction == self.chain:
+                print(f"Sunt Executive  {self.chain}si voi rezolva {m}")
+            elif m.direction == self.next_chain.chain:
+                print(
+                    f"Sunt Executive  {self.chain} si transmite mesajul lui {self.next_chain.chain}"
+                )
+                self.next_chain.messages.put(m)
+            else:
+                print(f"NU exista acest {m.direction}")
+        else:
+            print(f"Sunt Executive  {self.chain} si transmite mesajul lui previous")
+            self.previous.messages.put(m)
+
+
+class Manager(Handler):
+    def handleRequest(self, m: Message):
+        if m.level == 3:
+            if m.direction == self.chain:
+                print(f"Sunt Manager {self.chain} si voi rezolva {m}")
+            elif m.direction == self.next_chain.chain:
+                print(
+                    f"Sunt Manager  {self.chain} si transmite mesajul lui {self.next_chain.chain}"
+                )
+                self.next_chain.messages.put(m)
+            else:
+                print(f"NU exista acest {m.direction}")
+        else:
+            print(f"Sunt Manager {self.chain} si transmite mesajul lui previous")
+            self.previous.messages.put(m)
+
+
+class Worker(Handler):
+    def handleRequest(self, m: Message):
+        if m.level == 4:
+            if m.direction == self.chain:
+                print(f"Sunt HappyWorker  {self.chain} si voi rezolva {m}")
+            elif m.direction == self.next_chain.chain:
+                print(
+                    f"Sunt HappyWorker {self.chain} si transmite mesajul lui {self.next_chain.chain}"
+                )
+                self.next_chain.messages.put(m)
+            else:
+                print(f"NU exista acest {m.direction}")
+
+
+if __name__ == "__main__":
+    worker1 = Worker("up", None, None)
+    worker2 = Worker("down", None, worker1)
+    worker1.next_chain = worker2
+
+    worker1.start()
+    worker2.start()
+
+    manager1 = Manager("up", worker1, None)
+    manager2 = Manager("down", worker2, manager1)
+    manager1.next_chain = manager2
+
+    manager1.start()
+    manager2.start()
+
+    executive1 = Executive("up", manager1, None)
+    executive2 = Executive("down", manager2, executive1)
+    executive1.next_chain = executive2
+
+    executive1.start()
+    executive2.start()
+
+    ceo1 = CEO("up", executive1, None)
+    ceo2 = CEO("down", executive2, ceo1)
+    ceo1.next_chain = ceo2
+
+    ceo1.start()
+    ceo2.start()
+
+    ceo1.messages.put(Message("sugi pl", 4, "up"))
+    ceo2.messages.put(Message("sugi pl", 4, "up"))
+
+    ## in paralel   ceo1 -> executive1 -> manager1 -> worker1
+    ##              ceo2 -> executive2 -> manager2 -> worker2 -> worker1
+
+-------------------------------------------
+corutine python
+
+import asyncio
+
+async def multiply(n, dictionary):
+    for key in dictionary:
+        dictionary[key] *= n
+    return dictionary
+
+async def sum2by2(dictionary):
+    keys = list(dictionary.keys())
+    for i in range(len(keys) - 1):
+        dictionary[keys[i]] += dictionary[keys[i + 1]]
+    return dictionary
+
+async def zerorize(dictionary):
+    keys = list(dictionary.keys())
+    for key in keys:
+        if dictionary[key] % 2 == 0:
+            dictionary[key] = 0
+    return dictionary
+
+async def main():
+    dictionary = {3: 6, 5: 8, 8: 7, 2: 9}
+
+    dictionary = await multiply(3, dictionary)
+    dictionary = await sum2by2(dictionary)
+    dictionary = await zerorize(dictionary)
+
+    print(dictionary)
+
+asyncio.run(main())
+
+-------------------------------------------
+Modelarea unei sali de laborator cu liste algebrice
+KOT100
+
+sealed class Clasa<out T>() {
+    data class Banca<T>(var value: T?, val next: Clasa<T>) : Clasa<T>()
+    object Empty : Clasa<Nothing>()
+
+    fun isEmpty(): Boolean {
+        return when (this) {
+            is Banca -> false
+            is Empty -> true
+        }
+    }
+
+    fun isFull(): Boolean {
+        return when (this) {
+            is Banca -> (this.prezenta() == 10)
+            is Empty -> false
+        }
+    }
+
+    fun prezenta(): Int {
+        return when (this) {
+            is Banca -> {if (value != null) { 1 } else { 0 } + this.next.prezenta()}
+            is Empty -> 0
+        }
+    }
+
+    fun listaStudenti(){
+         when (this) {
+            is Banca -> {
+                if(this.value != null)
+                    println(this.value.toString())
+                else
+                    println("\t\t\t\tBanca Goala")
+                this.next.listaStudenti()
+            }
+            is Empty -> println("----------")
+        }
+    }
+
+    fun aVenit(newValue: @UnsafeVariance T?): Clasa<T> {
+        when (this) {
+            is Banca<T> -> {
+                if(!isFull()) {
+                    return if (this.value == null) {
+                        this.value = newValue
+                        this
+                    } else {
+                        Banca(this.value, this.next.aVenit(newValue))
+                    }
+                } else {
+                    println("Laborator plin scuze ${newValue}")
+                    return this
+                }
+            }
+            is Empty -> return Banca(newValue, Empty)
+        }
+    }
+
+}
+
+fun main() {
+    var laborator: Clasa<String> = Clasa.Empty
+    println("Laborator gol: ${laborator.isEmpty()}")
+    val studenti: List<String?> = listOf("Alex", "Andrei", "Ana", "Alexandra", null, "Bobert", null, "Alejandro", "Mihai", "Dumitru","Paco","Cristi","Ion")
+    for(student in studenti){
+        println("${student} vrea sa intre in Laborator")
+        laborator = laborator.aVenit(student)
+    }
+    println("\nStudenti intrati in Laborator: ")
+    laborator.listaStudenti()
+    println("Au venit ${laborator.prezenta()}")
+}
+
+----------------------------------------------
+KOT53
+Fie o multime de 100 elemente alese aleator care sunt depuse intr-o colectie
+a1^2 + a2^2 + ...
+
+
+import java.util.Scanner
+import kotlin.random.Random
+
+fun main(args: Array<String>) {
+    val A = List(100) {
+       2 *  Random(System.nanoTime()).nextInt(5000)
+    }
+    var n = Scanner(System.`in`).nextInt()
+    println(A.take(n).sumOf{it * it})
+}
+
+
+---------------------------------------
+PY359
+Model Decorator Camera Hostel 
+
+import random
+
+class RoomService:
+    def __init__(self,price):
+        self.price = price
+
+    def printFactura(self):
+        print( f'Factura pentru room service este {self.price}')
+class Camera:
+    def __init__(self,number,price,is_available,room_service:RoomService):
+        self.price = price
+        self.number = number
+        self.is_available = is_available
+        self.room_service = room_service
+
+    def is_available(self) -> bool:
+        return self.is_available == True
+
+    def make_unavailable(self):
+        self.is_available = False
+
+    def call_room_service(self):
+        self.price += self.room_service.price
+
+    def decorator_print_factura(func):
+        def inner(self):
+            roomService.printFactura()
+            func(self)
+        return inner
+
+    @decorator_print_factura
+    def printFactura(self):
+        print(f'Camera costa {self.price}')
+
+    def __str__(self):
+        availability = "este" if self.is_available else "nu este"
+        return f"Camera {self.number} costa {self.price} si {availability} libera."
+
+class Hostel:
+    def __init__(self,name,rooms,max):
+        self.name = name
+        self.rooms = rooms
+        self.length = len(rooms)
+        self.max = max
+
+    def is_full(self):
+        return self.length == self.max
+
+class Person:
+    def __init__(self,name,amount_of_money):
+        self.name = name
+        self.amount_of_money = amount_of_money
+        self.camera = None
+
+    def book(self,camera: Camera) -> bool:
+        #print(f'pret camera{camera.number} -> {camera.price} ---- bani disponibili {self.amount_of_money}')
+        if (camera.is_available == True):
+            if camera.price <= self.amount_of_money:
+                camera.make_unavailable()
+                self.camera = camera
+                return True
+            else:
+                #print(f'{self.name} nu a avut bani de camera{camera.number}')
+                pass
+        return False
+
+    def call(self):
+        self.camera.call_room_service()
+
+    def __str__(self):
+        cazata = f'este in camera {self.camera}' if camere == None else f'nu este cazata'
+        return f'{self.name} are {self.amount_of_money} lei si {cazata}'
+
+
+if __name__ == "__main__":
+    camere = []
+    roomService = RoomService(200)
+    for roomNumber in range(10):
+        camere.append(Camera(roomNumber,random.randint(500,1000),1,roomService))
+
+    persoane = []
+    for persoanaNumar in (range(10)):
+        persoane.append(Person(f'Persoana{persoanaNumar}',random.randint(500,1000)))
+
+    for persoana in persoane:
+        #print(f'Incearca {persoana.name}')
+        for camera in camere:
+            if persoana.book(camera) == False:
+                #print(f'Camera {camera.number} este deja luata, incarcam alta')
+                pass
+            else:
+                print(f'{persoana.name} a luat camera {camera.number}')
+                persoana.call()
+                camera.printFactura()
+                break
